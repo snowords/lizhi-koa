@@ -1,45 +1,41 @@
-// 引入 Koa 模块
 const Koa = require("koa");
-// 引入 request 模块
-const request = require("request");
-// 引入 fs 模块
+const axios = require("axios");
 const fs = require("fs");
 
-const { list } = require("./songList")
-// 创建一个 Koa 应用
+const { list } = require("./songList");
+
 const app = new Koa();
-// 定义一个路由处理函数
+
+// 定义下载歌曲的函数
+const downloadSong = async (song) => {
+  const { name, url } = song;
+  const filePath = `./songs/${name}.mp3`; // 定义歌曲保存的文件路径
+
+  const writer = fs.createWriteStream(filePath); // 创建可写流，用于保存文件
+  const response = await axios({ // 发送 HTTP 请求获取歌曲数据
+    url: encodeURI(url),
+    method: "GET",
+    responseType: "stream", // 设置响应类型为流
+  });
+
+  response.data.pipe(writer); // 将响应数据流写入文件
+
+  return new Promise((resolve, reject) => {
+    writer.on("finish", resolve); // 监听写入完成事件，表示歌曲下载完成
+    writer.on("error", reject); // 监听错误事件，表示歌曲下载出错
+  });
+};
+
 app.use(async (ctx) => {
-  // 定义一个链接地址
-  // var url = "https://testingcf.jsdelivr.net/gh/nj-lizhi/song@master/audio/list-v2.js";
-  // // 调用 request() 函数，传入链接地址，获取数据流
-  // var stream = request(url);
-  // // 定义一个变量存储数据
-  // var data = "";
-  // // 监听 data 事件，拼接数据
-  // stream.on("data", (chunk) => {
-  //   data += chunk;
-  // });
-  // 监听 end 事件，处理数据
-  // stream.on("end", () => {
-  //   // 去掉数据前面的 var list =
-  //   data = data.replace("var list =", "");
-  //   // 使用 JSON.parse() 方法将数据转换为 JSON 对象
-  //   var json = JSON.parse(data);
-  //   // 遍历 JSON 对象中的歌曲列表
-    for (let song of list) {
-      // 获取歌曲的名称和下载地址
-      const { name, artist, url, cover} = song;
-      // 定义一个文件路径
-      const filePath = "./songs/" + artist + "-" + name + ".mp3";
-      // 调用 request() 函数，传入下载地址，获取数据流
-      const songStream = request(encodeURI(url));
-      // 调用 pipe() 方法，将数据流写入到文件中
-      songStream.pipe(fs.createWriteStream(filePath));
-    }
-  //   // 返回成功的信息
-  // });
-  ctx.body = "下载成功！";``
+  const downloadPromises = list.map(downloadSong); // 创建下载歌曲的 Promise 数组
+
+  try {
+    await Promise.all(downloadPromises); // 等待所有歌曲下载完成
+    ctx.body = "所有歌曲下载完成！"; // 返回成功的信息
+  } catch (err) {
+    console.error("下载失败:", err);
+    ctx.body = "下载失败！"; // 返回失败的信息
+  }
 });
-// 监听 3000 端口
-app.listen(3147);
+
+app.listen(3147); // 监听端口号 3147
