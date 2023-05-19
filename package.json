@@ -1,0 +1,30 @@
+{
+
+  "name": "koa",
+
+  "version": "1.0.0",
+
+  "description": "lizhi songs download koa",
+
+  "main": "index.js",
+
+  "author": "snowords",
+
+  "license": "ISC",
+
+  "scripts": {
+
+    "test": "echo \"Error: no test specified\" && exit 1"
+
+  },
+
+  "dependencies": {
+
+    "koa": "^2.14.2",
+
+    "request": "^2.88.2"
+
+  }
+
+}
+
